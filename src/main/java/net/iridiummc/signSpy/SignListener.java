@@ -1,5 +1,8 @@
 package net.iridiummc.signSpy;
 
+import github.scarsz.discordsrv.DiscordSRV;
+import github.scarsz.discordsrv.dependencies.jda.api.EmbedBuilder;
+import github.scarsz.discordsrv.dependencies.jda.api.entities.TextChannel;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -56,7 +59,7 @@ public class SignListener implements Listener {
                         .append(Component.text(" Y:", NamedTextColor.AQUA))
                         .append(Component.text(loc.getBlockY(), NamedTextColor.AQUA))
                         .append(Component.text(" Z:", NamedTextColor.AQUA))
-                        .clickEvent(ClickEvent.runCommand("/tp " + player.getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()))
+                        .clickEvent(ClickEvent.runCommand("/tp " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()))
                         .hoverEvent(HoverEvent.showText(Component.text("Click to teleport to sign", NamedTextColor.GRAY)))
                         .build())
                 .append(Component.text(" with content: ", NamedTextColor.WHITE))
@@ -76,5 +79,25 @@ public class SignListener implements Listener {
                 loc.getWorld().getName() + " X:" + loc.getBlockX() +
                 " Y:" + loc.getBlockY() + " Z:" + loc.getBlockZ() +
                 " with content: \"" + signContent + "\"");
+
+        if (Bukkit.getPluginManager().isPluginEnabled("DiscordSRV")) {
+            String channelId = DiscordSRV.config().getString("Channels.global");
+            TextChannel chatChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(channelId);
+
+            if (chatChannel != null) {
+                EmbedBuilder embed = new EmbedBuilder();
+                embed.setTitle("🪧 Sign Changed");
+                embed.setColor(0x00AAFF);
+                embed.addField("Player", player.getName(), true);
+                embed.addField("Location",
+                        loc.getWorld().getName() + " X:" + loc.getBlockX() +
+                                " Y:" + loc.getBlockY() + " Z:" + loc.getBlockZ(), false);
+                embed.addField("Content", "```\n" + signContent + "\n```", false);
+                embed.setFooter("SignSpy • Minecraft Server", null);
+                embed.setTimestamp(java.time.Instant.now());
+
+                chatChannel.sendMessageEmbeds(embed.build()).queue();
+            }
+        }
     }
 }

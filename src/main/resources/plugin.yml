@@ -2,6 +2,7 @@ name: SignSpy
 version: '1.0-SNAPSHOT'
 main: net.iridiummc.signSpy.SignSpy
 api-version: '1.21'
+softdepend: [DiscordSRV]
 permissions:
   signspy.mod:
     description: Allows moderators to view contents of placed signs
