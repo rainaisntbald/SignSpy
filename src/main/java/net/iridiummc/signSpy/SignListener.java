@@ -59,6 +59,7 @@ public class SignListener implements Listener {
                         .append(Component.text(" Y:", NamedTextColor.AQUA))
                         .append(Component.text(loc.getBlockY(), NamedTextColor.AQUA))
                         .append(Component.text(" Z:", NamedTextColor.AQUA))
+                        .append(Component.text(loc.getBlockZ(), NamedTextColor.AQUA))
                         .clickEvent(ClickEvent.runCommand("/tp " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()))
                         .hoverEvent(HoverEvent.showText(Component.text("Click to teleport to sign", NamedTextColor.GRAY)))
                         .build())
@@ -86,16 +87,13 @@ public class SignListener implements Listener {
 
             if (chatChannel != null) {
                 EmbedBuilder embed = new EmbedBuilder();
-                embed.setTitle("🪧 Sign Changed");
+                embed.setTitle("Player " + player.getName() + "'s sign: " + signContent
+                        .replace("|", "\\|")
+                        .replace("*", "\\*")
+                        .replace("_", "\\_")
+                        .replace("`", "\\`")
+                );
                 embed.setColor(0x00AAFF);
-                embed.addField("Player", player.getName(), true);
-                embed.addField("Location",
-                        loc.getWorld().getName() + " X:" + loc.getBlockX() +
-                                " Y:" + loc.getBlockY() + " Z:" + loc.getBlockZ(), false);
-                embed.addField("Content", "```\n" + signContent + "\n```", false);
-                embed.setFooter("SignSpy • Minecraft Server", null);
-                embed.setTimestamp(java.time.Instant.now());
-
                 chatChannel.sendMessageEmbeds(embed.build()).queue();
             }
         }
