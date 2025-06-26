@@ -71,7 +71,7 @@ public class SignListener implements Listener {
                 .build();
 
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-            if (onlinePlayer.hasPermission("signspy.mod")) {
+            if (onlinePlayer.hasPermission("signspy.mod") && !plugin.isNotificationsDisabled(onlinePlayer)) {
                 onlinePlayer.sendMessage(message);
             }
         }

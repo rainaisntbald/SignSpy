@@ -6,3 +6,6 @@ softdepend: [DiscordSRV]
 permissions:
   signspy.mod:
     description: Allows moderators to view contents of placed signs
+commands:
+  signspytoggle:
+    description: Toggle sign notifications.
