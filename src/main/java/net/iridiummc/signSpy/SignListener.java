@@ -8,6 +8,8 @@ import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,18 +29,20 @@ public class SignListener implements Listener {
     private final String username;
     private final String password;
     private final boolean redisEnabled;
+    private final boolean ignoreSignShop;
 
     /**
      * Constructor for the SignListener.
      * @param plugin The main plugin instance.
      */
-    public SignListener(SignSpy plugin, String host, int port, boolean redisEnabled, String username, String password) {
+    public SignListener(SignSpy plugin, String host, int port, boolean redisEnabled, String username, String password, boolean ignoreSignShop) {
         this.plugin = plugin;
         this.host = host;
         this.port = port;
         this.username = username;
         this.password = password;
         this.redisEnabled = redisEnabled;
+        this.ignoreSignShop = ignoreSignShop;
 
         if(redisEnabled) {
             new Thread(this::subscribe).start();
@@ -72,6 +76,11 @@ public class SignListener implements Listener {
         String y = loc.getBlockY() + "";
         String z = loc.getBlockZ() + "";
         String signContent = signContentBuilder.toString();
+        if(ignoreSignShop &&
+                PlainTextComponentSerializer.plainText().serialize(event.lines().get(0)).equals(playerName) &&
+                NumberUtils.isCreatable(PlainTextComponentSerializer.plainText().serialize(event.lines().get(1)))) {
+            return;
+        }
 
         if(redisEnabled) {
             publish(playerName, worldName, x, y, z, signContent);

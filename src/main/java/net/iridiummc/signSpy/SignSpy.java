@@ -21,9 +21,10 @@ public class SignSpy extends JavaPlugin {
         boolean redisEnabled = config.getBoolean("redis.enabled");
         String username = config.getString("redis.username");
         String password = config.getString("redis.password");
+        boolean ignoreSignShops = config.getBoolean("signShop.ignoreSignShops");
 
         getServer().getPluginManager().registerEvents(
-                new SignListener(this, host, port, redisEnabled, username, password), this
+                new SignListener(this, host, port, redisEnabled, username, password, ignoreSignShops), this
         );
         // Register the toggle command
         getCommand("signspytoggle").setExecutor(new SignSpyToggleCommand(this));
