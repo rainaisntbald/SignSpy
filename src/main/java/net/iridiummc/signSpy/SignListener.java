@@ -100,7 +100,7 @@ public class SignListener implements Listener {
         }
 
         if(redisEnabled) {
-            new Thread(() -> publish(playerName, worldName, x, y, z, signContent));
+            new Thread(() -> publish(playerName, worldName, x, y, z, signContent)).start();
             return;
         }
         displaySignMessage(playerName, worldName, x, y, z, signContent);
