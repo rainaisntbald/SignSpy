@@ -14,17 +14,35 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.Location;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPubSub;
 
 public class SignListener implements Listener {
 
     private final SignSpy plugin;
+    private static final String CHANNEL_NAME = "signspy";
+    private final String host;
+    private final int port;
+    private final String username;
+    private final String password;
+    private final boolean redisEnabled;
 
     /**
      * Constructor for the SignListener.
      * @param plugin The main plugin instance.
      */
-    public SignListener(SignSpy plugin) {
+    public SignListener(SignSpy plugin, String host, int port, boolean redisEnabled, String username, String password) {
         this.plugin = plugin;
+        this.host = host;
+        this.port = port;
+        this.username = username;
+        this.password = password;
+        this.redisEnabled = redisEnabled;
+
+        if(redisEnabled) {
+            new Thread(this::subscribe).start();
+        }
     }
 
     /**
@@ -47,20 +65,34 @@ public class SignListener implements Listener {
             signContentBuilder.append(line);
             firstLine = false;
         }
+
+        String playerName = player.getName();
+        String worldName = loc.getWorld().getName();
+        String x = loc.getBlockX() + "";
+        String y = loc.getBlockY() + "";
+        String z = loc.getBlockZ() + "";
         String signContent = signContentBuilder.toString();
 
+        if(redisEnabled) {
+            publish(playerName, worldName, x, y, z, signContent);
+            return;
+        }
+        displaySignMessage(playerName, worldName, x, y, z, signContent);
+    }
+
+    private void displaySignMessage(String playerName, String worldName, String x, String y, String z, String signContent) {
         TextComponent message = Component.text()
                 .append(Component.text("[SignSpy] ", NamedTextColor.GOLD))
-                .append(Component.text(player.getName(), NamedTextColor.YELLOW))
+                .append(Component.text(playerName, NamedTextColor.YELLOW))
                 .append(Component.text(" placed/edited a sign at ", NamedTextColor.WHITE))
                 .append(Component.text()
-                        .append(Component.text(loc.getWorld().getName() + ", X:", NamedTextColor.AQUA))
-                        .append(Component.text(loc.getBlockX(), NamedTextColor.AQUA))
+                        .append(Component.text(worldName + ", X:", NamedTextColor.AQUA))
+                        .append(Component.text(x, NamedTextColor.AQUA))
                         .append(Component.text(" Y:", NamedTextColor.AQUA))
-                        .append(Component.text(loc.getBlockY(), NamedTextColor.AQUA))
+                        .append(Component.text(y, NamedTextColor.AQUA))
                         .append(Component.text(" Z:", NamedTextColor.AQUA))
-                        .append(Component.text(loc.getBlockZ(), NamedTextColor.AQUA))
-                        .clickEvent(ClickEvent.runCommand("/tp " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()))
+                        .append(Component.text(z, NamedTextColor.AQUA))
+                        .clickEvent(ClickEvent.runCommand("/tp " + x + " " + y + " " + z))
                         .hoverEvent(HoverEvent.showText(Component.text("Click to teleport to sign", NamedTextColor.GRAY)))
                         .build())
                 .append(Component.text(" with content: ", NamedTextColor.WHITE))
@@ -76,9 +108,9 @@ public class SignListener implements Listener {
             }
         }
 
-        plugin.getLogger().info(player.getName() + " placed/edited a sign at " +
-                loc.getWorld().getName() + " X:" + loc.getBlockX() +
-                " Y:" + loc.getBlockY() + " Z:" + loc.getBlockZ() +
+        plugin.getLogger().info(playerName + " placed/edited a sign at " +
+                worldName + " X:" + x +
+                " Y:" + y + " Z:" + z +
                 " with content: \"" + signContent + "\"");
 
         if (Bukkit.getPluginManager().isPluginEnabled("DiscordSRV")) {
@@ -87,7 +119,7 @@ public class SignListener implements Listener {
 
             if (chatChannel != null) {
                 EmbedBuilder embed = new EmbedBuilder();
-                embed.setTitle("Player " + player.getName() + "'s sign: " + signContent
+                embed.setTitle("Player " + playerName + "'s sign: " + signContent
                         .replace("|", "\\|")
                         .replace("*", "\\*")
                         .replace("_", "\\_")
@@ -96,6 +128,37 @@ public class SignListener implements Listener {
                 embed.setColor(0x00AAFF);
                 chatChannel.sendMessageEmbeds(embed.build()).queue();
             }
+        }
+    }
+
+    public void subscribe() {
+        DefaultJedisClientConfig defaultJedisClientConfig = DefaultJedisClientConfig.builder().build();
+        if(!username.isBlank() || !password.isBlank()) {
+            defaultJedisClientConfig = DefaultJedisClientConfig.builder().user(username).password(password).build();
+        }
+
+        try (Jedis jedis = new Jedis(host, port, defaultJedisClientConfig)) {
+            jedis.subscribe(new JedisPubSub() {
+                @Override
+                public void onMessage(String channel, String message) {
+                    if(!channel.equals(CHANNEL_NAME)) return; // Probably useless
+                    String[] split = message.split("#", 6);
+                    displaySignMessage(split[0], split[1], split[2], split[3], split[4], split[5]);
+                }
+            }, CHANNEL_NAME);
+        }
+    }
+
+    public void publish(String playerName, String worldName, String x, String y, String z, String signContent) {
+        String message = playerName + "#" + worldName + "#" + x + "#" + y + "#" + z + "#" + signContent;
+
+        DefaultJedisClientConfig defaultJedisClientConfig = DefaultJedisClientConfig.builder().build();
+        if(!username.isBlank() && !password.isBlank()) {
+            defaultJedisClientConfig = DefaultJedisClientConfig.builder().user(username).password(password).build();
+        }
+
+        try (Jedis jedis = new Jedis(host, port, defaultJedisClientConfig)) {
+            jedis.publish(CHANNEL_NAME, message);
         }
     }
 }

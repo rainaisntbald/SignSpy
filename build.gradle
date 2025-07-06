@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("com.gradleup.shadow") version "8.3.8"
 }
 
 group = 'net.iridiummc'
@@ -25,6 +26,7 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT")
     compileOnly("com.discordsrv:discordsrv:1.28.0")
+    implementation 'redis.clients:jedis:6.0.0'
 }
 
 tasks {
@@ -61,4 +63,9 @@ processResources {
     filesMatching('plugin.yml') {
         expand props
     }
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    relocate 'redis.clients.jedis', 'my.bumpjam.signspy.jedis' // avoid class conflicts
 }

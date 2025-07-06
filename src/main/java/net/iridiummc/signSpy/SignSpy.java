@@ -1,5 +1,6 @@
 package net.iridiummc.signSpy;
 
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashSet;
@@ -13,7 +14,17 @@ public class SignSpy extends JavaPlugin {
     @Override
     public void onEnable() {
         getLogger().info("SignSpy has been enabled!");
-        getServer().getPluginManager().registerEvents(new SignListener(this), this);
+        this.saveDefaultConfig();
+        FileConfiguration config = getConfig();
+        String host = config.getString("redis.host");
+        int port = config.getInt("redis.port");
+        boolean redisEnabled = config.getBoolean("redis.enabled");
+        String username = config.getString("redis.username");
+        String password = config.getString("redis.password");
+
+        getServer().getPluginManager().registerEvents(
+                new SignListener(this, host, port, redisEnabled, username, password), this
+        );
         // Register the toggle command
         getCommand("signspytoggle").setExecutor(new SignSpyToggleCommand(this));
     }
