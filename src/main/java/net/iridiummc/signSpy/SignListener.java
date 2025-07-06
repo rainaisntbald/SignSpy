@@ -83,7 +83,7 @@ public class SignListener implements Listener {
         }
 
         if(redisEnabled) {
-            publish(playerName, worldName, x, y, z, signContent);
+            new Thread(() -> publish(playerName, worldName, x, y, z, signContent));
             return;
         }
         displaySignMessage(playerName, worldName, x, y, z, signContent);
@@ -121,23 +121,6 @@ public class SignListener implements Listener {
                 worldName + " X:" + x +
                 " Y:" + y + " Z:" + z +
                 " with content: \"" + signContent + "\"");
-
-        if (Bukkit.getPluginManager().isPluginEnabled("DiscordSRV")) {
-            String channelId = DiscordSRV.config().getString("Channels.global");
-            TextChannel chatChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(channelId);
-
-            if (chatChannel != null) {
-                EmbedBuilder embed = new EmbedBuilder();
-                embed.setTitle("Player " + playerName + "'s sign: " + signContent
-                        .replace("|", "\\|")
-                        .replace("*", "\\*")
-                        .replace("_", "\\_")
-                        .replace("`", "\\`")
-                );
-                embed.setColor(0x00AAFF);
-                chatChannel.sendMessageEmbeds(embed.build()).queue();
-            }
-        }
     }
 
     public void subscribe() {
@@ -168,6 +151,23 @@ public class SignListener implements Listener {
 
         try (Jedis jedis = new Jedis(host, port, defaultJedisClientConfig)) {
             jedis.publish(CHANNEL_NAME, message);
+        }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("DiscordSRV")) {
+            String channelId = DiscordSRV.config().getString("Channels.global");
+            TextChannel chatChannel = DiscordSRV.getPlugin().getJda().getTextChannelById(channelId);
+
+            if (chatChannel != null) {
+                EmbedBuilder embed = new EmbedBuilder();
+                embed.setTitle("Player " + playerName + "'s sign: " + signContent
+                        .replace("|", "\\|")
+                        .replace("*", "\\*")
+                        .replace("_", "\\_")
+                        .replace("`", "\\`")
+                );
+                embed.setColor(0x00AAFF);
+                chatChannel.sendMessageEmbeds(embed.build()).queue();
+            }
         }
     }
 }
