@@ -20,6 +20,8 @@ import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPubSub;
 
+import java.util.Arrays;
+
 public class SignListener implements Listener {
 
     private final SignSpy plugin;
@@ -62,6 +64,7 @@ public class SignListener implements Listener {
 
         StringBuilder signContentBuilder = new StringBuilder();
         boolean firstLine = true;
+        if(Arrays.stream(event.getLines()).allMatch(String::isEmpty)) return;
         for (String line : event.getLines()) {
             if (!firstLine) {
                 signContentBuilder.append(" | ");
